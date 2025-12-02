@@ -4,43 +4,87 @@
     <meta charset="UTF-8">
     <title>ドローポーカー (CPU 3名対戦)</title>
     <style>
-        /* CSS: スタイリング部分 */
+        /* CSS: 楕円配置とカードの非表示化 */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #388e3c; /* ポーカーテーブルの緑色 */
+            background-color: #212121; /* 背景色を暗く */
             color: #fff;
             padding: 20px;
-        }
-        #game-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: #1b5e20;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-        }
-        .player-area {
-            border: 2px solid #ffeb3b;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            background-color: rgba(0, 0, 0, 0.3);
-        }
-        #player-hand .card, .cpu-hand .card {
-            display: inline-block;
-            width: 70px;
-            height: 100px;
-            border: 1px solid #000;
-            border-radius: 8px;
-            margin-right: 10px;
             text-align: center;
-            line-height: 100px;
-            font-size: 20px;
+        }
+        #poker-table {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            margin: 40px auto;
+            border-radius: 50%; /* 正円に近い楕円テーブル */
+            background-color: #1b5e20; /* ポーカーテーブルの緑色 */
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        /* プレイヤーエリア共通 */
+        .player-area {
+            position: absolute;
+            width: 180px;
+            border: 2px solid #ffeb3b;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            transition: border-color 0.3s;
+            text-align: left;
+            font-size: 0.9em;
+        }
+
+        /* プレイヤーとCPUの配置 (楕円状) */
+        /* プレイヤー (下中央) */
+        #player-area {
+            left: 50%;
+            bottom: -50px; /* テーブルの外側へ */
+            transform: translateX(-50%);
+            border-color: #42a5f5 !important;
+        }
+
+        /* CPU 1 (左上) */
+        #cpu1-area {
+            top: 50px;
+            left: 50px;
+        }
+        /* CPU 2 (上中央) */
+        #cpu2-area {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        /* CPU 3 (右上) */
+        #cpu3-area {
+            top: 50px;
+            right: 50px;
+        }
+        
+        /* カードのスタイリング */
+        .hand {
+            height: 70px; /* カードの高さに合わせる */
+            margin-top: 5px;
+            display: flex;
+            justify-content: flex-start;
+        }
+        .player-hand .card, .cpu-hand .card {
+            display: inline-block;
+            width: 50px;
+            height: 70px;
+            border: 1px solid #000;
+            border-radius: 4px;
+            margin-right: 3px;
+            text-align: center;
+            font-size: 14px;
             font-weight: bold;
             background-color: #f0f0f0;
             color: #000;
             cursor: pointer;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+            box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+            line-height: 0.7;
+            padding-top: 10px;
+            box-sizing: border-box; /* paddingを含めたサイズ計算 */
         }
         .selected-card {
             border: 3px solid #f44336 !important; /* 交換対象のカードの枠 */
@@ -48,18 +92,20 @@
         .card.back {
             background-color: #c62828; /* 裏面のカードの色 */
             color: transparent;
+            font-size: 0;
+            cursor: default !important; /* CPUカードはクリック不可に */
+            padding-top: 0;
         }
-        .action-area button, #risk-selection button, #bet-amount-area button {
-            padding: 10px 15px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
+        .card.back::before {
+             content: "♣️";
+             display: block;
+             font-size: 20px;
+             line-height: 70px;
+             color: white;
+             text-align: center;
         }
-        .action-area button:hover, #risk-selection button:hover, #bet-amount-area button:hover {
-            opacity: 0.8;
-        }
+        
+        /* その他の要素 */
         #message {
             margin-top: 20px;
             padding: 10px;
@@ -67,9 +113,38 @@
             border-radius: 5px;
             font-size: 18px;
             text-align: center;
+            width: 600px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .red-suit { color: red; }
         .black-suit { color: black; }
+
+        /* ベット・アクションエリア */
+        #action-area {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .action-area button, #risk-selection button, #bet-amount-area button {
+            padding: 8px 12px;
+            margin: 3px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #pot-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -84,50 +159,51 @@
             <button onclick="startGame(10000)" style="background-color: #f44336;">多 (High Risk: 10,000 チップ)</button>
         </div>
         
-        <hr>
+        <div id="poker-table">
+            <div id="pot-display" style="display:none;">
+                <p>ポット: <span id="pot-amount">0</span> チップ</p>
+            </div>
 
-        <div id="cpu1-area" class="player-area" style="display:none;">
-            <h2>CPU 1: <span id="cpu1-chips">0</span> チップ</h2>
-            <div id="cpu1-hand" class="cpu-hand"></div>
-            <p id="cpu1-action"></p>
-        </div>
-        
-        <div id="cpu2-area" class="player-area" style="display:none;">
-            <h2>CPU 2: <span id="cpu2-chips">0</span> チップ</h2>
-            <div id="cpu2-hand" class="cpu-hand"></div>
-            <p id="cpu2-action"></p>
-        </div>
+            <div id="cpu1-area" class="player-area" style="display:none;">
+                <h3>CPU 1: <span id="cpu1-chips">0</span> チップ</h3>
+                <div id="cpu1-hand" class="cpu-hand hand"></div>
+                <p id="cpu1-action"></p>
+            </div>
+            
+            <div id="cpu2-area" class="player-area" style="display:none;">
+                <h3>CPU 2: <span id="cpu2-chips">0</span> チップ</h3>
+                <div id="cpu2-hand" class="cpu-hand hand"></div>
+                <p id="cpu2-action"></p>
+            </div>
 
-        <div id="cpu3-area" class="player-area" style="display:none;">
-            <h2>CPU 3: <span id="cpu3-chips">0</span> チップ</h2>
-            <div id="cpu3-hand" class="cpu-hand"></div>
-            <p id="cpu3-action"></p>
-        </div>
+            <div id="cpu3-area" class="player-area" style="display:none;">
+                <h3>CPU 3: <span id="cpu3-chips">0</span> チップ</h3>
+                <div id="cpu3-hand" class="cpu-hand hand"></div>
+                <p id="cpu3-action"></p>
+            </div>
 
-        <hr>
+            <div id="player-area" class="player-area" style="display:none; border-color: #42a5f5;">
+                <h3>🧑 プレイヤー: <span id="player-chips">0</span> チップ</h3>
+                <div id="player-hand" class="player-hand hand"></div>
+                <p id="player-action"></p>
 
-        <div id="player-area" class="player-area" style="display:none; border-color: #42a5f5;">
-            <h2>🧑 プレイヤー: <span id="player-chips">0</span> チップ</h2>
-            <p>ポット (現在の賭け金総額): <span id="pot-amount">0</span> チップ</p>
-            <div id="player-hand"></div>
-            <p id="player-action"></p>
+                <div id="action-area" style="margin-top: 15px;">
+                    <div id="bet-phase-buttons">
+                        <button id="check-call-button" onclick="playerAction('call')" style="background-color: #4caf50;">コール / チェック</button>
+                        <button id="raise-button" onclick="showBetInput()" style="background-color: #ff9800;">レイズ / ベット</button>
+                        <button id="fold-button" onclick="playerAction('fold')" style="background-color: #f44336;">フォールド</button>
+                    </div>
 
-            <div id="action-area" style="margin-top: 15px;">
-                <div id="bet-phase-buttons">
-                    <button id="check-call-button" onclick="playerAction('call')" style="background-color: #4caf50;">コール / チェック</button>
-                    <button id="raise-button" onclick="showBetInput()" style="background-color: #ff9800;">レイズ / ベット</button>
-                    <button id="fold-button" onclick="playerAction('fold')" style="background-color: #f44336;">フォールド</button>
-                </div>
-
-                <div id="bet-amount-area" style="display:none;">
-                    <input type="number" id="bet-input" min="10" placeholder="ベット額" style="padding: 8px; width: 100px; margin-right: 10px; color: #000;">
-                    <button onclick="playerAction('raise')" style="background-color: #2196f3;">確定</button>
-                    <button onclick="hideBetInput()" style="background-color: #9e9e9e;">キャンセル</button>
-                </div>
-                
-                <div id="draw-phase-buttons" style="display:none;">
-                    <button id="draw-button" onclick="playerDraw()" style="background-color: #2196f3;">交換 (選択したカード)</button>
-                    <button id="stay-button" onclick="playerStay()" style="background-color: #4caf50;">交換なし (ステイ)</button>
+                    <div id="bet-amount-area" style="display:none;">
+                        <input type="number" id="bet-input" min="10" placeholder="ベット額" style="padding: 8px; width: 80px; margin-right: 5px; color: #000;">
+                        <button onclick="playerAction('raise')" style="background-color: #2196f3;">確定</button>
+                        <button onclick="hideBetInput()" style="background-color: #9e9e9e;">キャンセル</button>
+                    </div>
+                    
+                    <div id="draw-phase-buttons" style="display:none;">
+                        <button id="draw-button" onclick="playerDraw()" style="background-color: #2196f3;">交換 (選択したカード)</button>
+                        <button id="stay-button" onclick="playerStay()" style="background-color: #4caf50;">交換なし (ステイ)</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -167,13 +243,15 @@
             playerArea: document.getElementById('player-area'),
             playerChips: document.getElementById('player-chips'),
             playerHand: document.getElementById('player-hand'),
-            potAmount: document.getElementById('pot-amount'),
+            potAmount: document.getElementById('pot-amount'), 
             actionArea: document.getElementById('action-area'),
             betPhaseButtons: document.getElementById('bet-phase-buttons'),
             drawPhaseButtons: document.getElementById('draw-phase-buttons'),
             betAmountArea: document.getElementById('bet-amount-area'),
             betInput: document.getElementById('bet-input'),
             checkCallButton: document.getElementById('check-call-button'),
+            potDisplay: document.getElementById('pot-display'), // ポット表示エリア
+
             cpuAreas: [
                 document.getElementById('cpu1-area'),
                 document.getElementById('cpu2-area'),
@@ -207,11 +285,24 @@
         function startGame(initialChips) {
             dom.riskSelection.style.display = 'none';
             dom.playerArea.style.display = 'block';
+            dom.potDisplay.style.display = 'block'; 
             dom.message.textContent = `初期チップ ${initialChips} でゲームを開始します。`;
 
             // プレイヤーとCPUの初期化
             players = [];
-            players.push({ id: 0, name: 'プレイヤー', chips: initialChips, hand: [], bet: 0, status: 'active', isCPU: false, element: dom.playerArea, chipsElement: dom.playerChips });
+            players.push({ 
+                id: 0, 
+                name: 'プレイヤー', 
+                chips: initialChips, 
+                hand: [], 
+                bet: 0, 
+                status: 'active', 
+                isCPU: false, 
+                element: dom.playerArea, 
+                chipsElement: dom.playerChips, 
+                actionElement: document.getElementById('player-action'),
+                cardsToDraw: [] // プレイヤーの交換選択を保持
+            });
             for (let i = 1; i <= 3; i++) {
                 players.push({ 
                     id: i, 
@@ -248,7 +339,9 @@
                 p.hand = [];
                 p.bet = 0;
                 p.status = 'active'; // active, folded, allin
-                p.chipsElement.parentElement.style.backgroundColor = 'rgba(0, 0, 0, 0.3)';
+                p.element.style.borderColor = p.isCPU ? '#ffeb3b' : '#42a5f5'; // ボーダー色をリセット
+                if (!p.isCPU) p.cardsToDraw = [];
+                p.actionElement.textContent = ''; // アクション表示をリセット
                 activePlayers.push(p);
             });
             
@@ -256,11 +349,11 @@
             deck = createDeck();
             shuffleDeck(deck);
 
-            // アンティ (ブラインド) を支払う
-            payAnte();
-
             // カードを配布
             dealCards();
+
+            // アンティ (ブラインド) を支払う（強制的な最初のベット）
+            payAnte();
 
             // ベットラウンド開始
             currentPlayerIndex = (dealerIndex + 1) % players.length; // ディーラーの次のプレイヤーからアクション開始
@@ -316,6 +409,7 @@
         function updateAllHandsDisplay(showAll) {
             players.forEach(p => {
                 if (p.isCPU) {
+                    // CPUの手札は、ショーダウン時 (showAll=true) 以外は常に裏向き
                     displayHand(p.hand, p.id, showAll);
                 } else {
                     displayHand(p.hand, p.id, true); // プレイヤーは常に表
@@ -347,30 +441,23 @@
                     const rankText = card.rank;
                     const colorClass = (card.suit === 'H' || card.suit === 'D') ? 'red-suit' : 'black-suit';
                     cardDiv.innerHTML = `<span class="${colorClass}" style="font-size: 1.5em;">${suitSymbol}</span><br>${rankText}`;
-                    cardDiv.style.lineHeight = '0.7';
 
                     // プレイヤーの手札でのみ、交換選択のクリックイベントを設定
                     if (playerId === 0 && gamePhase === 'draw') {
                         cardDiv.onclick = () => toggleSelected(cardDiv, index);
-                        if (players[0].cardsToDraw.includes(index)) {
-                            cardDiv.classList.add('selected-card');
-                        }
                     } else if (playerId === 0) {
-                        // ベットフェーズではクリックイベントを無効化（誤操作防止）
                         cardDiv.onclick = null;
                     }
-
-                } else {
-                    cardDiv.textContent = ''; // 裏面
-                    cardDiv.style.backgroundColor = '#c62828';
                 }
+                
                 container.appendChild(cardDiv);
             });
 
-            // プレイヤーの交換選択状態の保存
+            // プレイヤーの交換選択状態を反映
             if (playerId === 0 && gamePhase === 'draw') {
+                const player = players[0];
                 container.childNodes.forEach((cardDiv, index) => {
-                    if (players[0].cardsToDraw.includes(index)) {
+                    if (player.cardsToDraw.includes(index)) {
                         cardDiv.classList.add('selected-card');
                     }
                 });
@@ -420,8 +507,8 @@
                 p.chips -= anteAmount;
                 p.bet = anteAmount;
                 pot += anteAmount;
-                currentBet = ANTE; // 全員がANETを払った状態が初期のベット額
             });
+            currentBet = ANTE; // 全員がANTEを払った状態が基準のベット額
             updateChipsDisplay();
         }
 
@@ -451,9 +538,18 @@
             // 現在のプレイヤーをハイライト解除
             players.forEach(p => p.element.style.borderColor = p.isCPU ? '#ffeb3b' : '#42a5f5');
 
-            // 誰もアクションしていない場合は、コールまたはチェックでベットラウンド終了
-            if (activePlayers.every(p => p.bet === currentBet || p.status === 'folded' || p.status === 'allin')) {
-                // すべての人が同じベット額に達し、かつ、アクション可能なプレイヤーがいない場合（チェックも含む）
+            // -----------------------------------------------------
+            // 終了条件チェック
+            // -----------------------------------------------------
+            // ベット可能なプレイヤー (folded/allinではない) で、まだcurrentBetに達していない人がいるか
+            const needsAction = players.some(p => 
+                p.status === 'active' && // フォールド/オールインではない
+                p.chips > 0 && // チップが残っている
+                p.bet < currentBet // まだコール/レイズが必要
+            );
+
+            // アクションが必要な人がいない場合、ベットラウンド終了
+            if (!needsAction) {
                 if (gamePhase === 'preflop_bet') {
                     startDrawPhase();
                     return;
@@ -462,19 +558,22 @@
                     return;
                 }
             }
+            // -----------------------------------------------------
             
-            // 誰か一人が残るまで、またはアクションが完了するまでループ
+            let startLoopIndex = currentPlayerIndex;
             do {
                 currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
                 const p = players[currentPlayerIndex];
 
                 // アクション可能なプレイヤー (フォールド/オールインではない)
                 if (p.status === 'active' && p.chips > 0) {
+                    
                     // 現在のプレイヤーをハイライト
                     p.element.style.borderColor = '#ff00ff';
                     
                     if (p.isCPU) {
-                        setTimeout(() => cpuAction(p), 1500); // CPUは1.5秒後にアクション
+                        // CPUはすぐにアクション、またはチェックを完了させる
+                        setTimeout(() => cpuAction(p), 1500); 
                         return;
                     } else {
                         // プレイヤーのアクション
@@ -483,13 +582,11 @@
                         return;
                     }
                 }
-            } while (currentPlayerIndex !== dealerIndex); // 全員をチェックするまで繰り返す
 
-            // 一周してもアクションプレイヤーが見つからない場合（全員フォールドまたはオールイン）
-            if (activePlayers.filter(p => p.status !== 'folded').length <= 1) {
-                startShowdown();
-            } else {
-                 // ここに来ることは基本ないはずだが、念のため次のフェーズへ
+            } while (currentPlayerIndex !== startLoopIndex); 
+
+            // 全員がチェック/コールして一周した場合 (念のため)
+            if (!needsAction) {
                 if (gamePhase === 'preflop_bet') {
                     startDrawPhase();
                 } else if (gamePhase === 'postdraw_bet') {
@@ -524,7 +621,6 @@
                 dom.checkCallButton.disabled = toCall > player.chips;
             }
             
-            // レイズボタンはいつでも有効（ただし、入力時にチップチェックは必要）
             dom.raiseButton.disabled = false;
         }
 
@@ -534,8 +630,10 @@
         function showBetInput() {
             dom.betPhaseButtons.style.display = 'none';
             dom.betAmountArea.style.display = 'block';
-            dom.betInput.value = currentBet * 2 || 20; // デフォルトで最小ベットの2倍または20
-            dom.betInput.min = currentBet > 0 ? currentBet * 2 : ANTE * 2;
+            
+            const minRaiseAmount = currentBet > 0 ? currentBet * 2 : ANTE * 2;
+            dom.betInput.value = minRaiseAmount; 
+            dom.betInput.min = minRaiseAmount;
         }
 
         /**
@@ -572,19 +670,18 @@
                     if (player.chips === 0 && player.bet === currentBet) player.status = 'allin';
                     break;
                 case 'raise':
-                    const raiseAmount = parseInt(dom.betInput.value);
+                    const totalBet = parseInt(dom.betInput.value);
                     const minRaise = currentBet > 0 ? currentBet * 2 : ANTE * 2;
                     
-                    if (isNaN(raiseAmount) || raiseAmount < minRaise) {
+                    if (isNaN(totalBet) || totalBet < minRaise) {
                         alert(`ベット額は最小 ${minRaise} チップ以上である必要があります。`);
                         return;
                     }
-                    if (raiseAmount > player.chips + player.bet) {
-                        alert(`チップが不足しています。最大ベット額は ${player.chips} チップです。`);
+                    if (totalBet > player.chips + player.bet) {
+                        alert(`チップが不足しています。最大ベット額は ${player.chips + player.bet} チップです。`);
                         return;
                     }
                     
-                    const totalBet = raiseAmount;
                     const amountToPay = totalBet - player.bet;
                     payBet(player, amountToPay);
                     currentBet = totalBet; // 新しいベット額を設定
@@ -607,16 +704,14 @@
         function cpuAction(cpu) {
             const toCall = currentBet - cpu.bet;
             const actionElement = cpu.actionElement;
-            actionElement.textContent = ''; // アクションメッセージをリセット
+            actionElement.textContent = ''; 
 
-            // シンプルなCPU戦略 (TODO: CPUのロジックはもっと複雑にできます)
-            // 役の強さを計算し、それに従って意思決定する
             const handRank = evaluateHand(cpu.hand).rank;
             let actionText = '';
 
             if (toCall === 0) {
                 // チェック可能な場合
-                if (handRank >= 4 || Math.random() < 0.3) { // 役が強いか、たまにブラフ
+                if (handRank >= 4 || Math.random() < 0.2) { // 役が強いか、たまにブラフ
                     const raiseAmount = Math.min(cpu.chips, currentBet * 2 || ANTE * 2);
                     if (raiseAmount > 0) {
                         const amountToPay = raiseAmount;
@@ -649,8 +744,8 @@
                     payBet(cpu, amountToPay);
                     currentBet = cpu.bet;
                     actionText = `レイズ (${currentBet} チップ)`;
-                } else if (handRank >= 2 || Math.random() < 0.1) { 
-                    // ワンペア以上か、稀にブラフでコール
+                } else if (handRank >= 2 || (toCall < cpu.chips * 0.1 && handRank >= 1)) { 
+                    // ワンペア以上か、安ければコール
                     payBet(cpu, toCall);
                     actionText = `コール (${toCall} チップ)`;
                 } else {
@@ -677,15 +772,12 @@
          */
         function startDrawPhase() {
             gamePhase = 'draw';
-            currentBet = 0; // 交換後のベットフェーズのためにリセット
-            
-            // プレイヤーをリセット
-            players[0].cardsToDraw = [];
+            currentBet = 0; 
             
             // 全員のアクション状態をリセット
-            activePlayers = activePlayers.filter(p => p.status !== 'folded');
-            activePlayers.forEach(p => p.status = 'active'); // フォールド以外をアクティブに
-
+            activePlayers = players.filter(p => p.status !== 'folded');
+            activePlayers.forEach(p => p.status = 'active'); 
+            
             dom.message.textContent = `**交換フェーズ** です。${players[0].name} は交換したいカードをクリックしてください。`;
             
             // プレイヤーのボタン表示切り替え
@@ -693,10 +785,9 @@
             dom.betPhaseButtons.style.display = 'none';
             dom.drawPhaseButtons.style.display = 'block';
             
-            // プレイヤーのカードにクリックイベントを再設定
-            updateAllHandsDisplay(true); // プレイヤーの手札をアクティブにする
+            updateAllHandsDisplay(false); // CPUカードは裏のまま、プレイヤーカードはクリック可能
             
-            currentPlayerIndex = (dealerIndex + 1) % players.length; // ディーラーの次のプレイヤーからアクション開始
+            currentPlayerIndex = (dealerIndex + 1) % players.length; 
             nextDrawAction();
         }
 
@@ -707,24 +798,23 @@
             // 現在のプレイヤーをハイライト解除
             players.forEach(p => p.element.style.borderColor = p.isCPU ? '#ffeb3b' : '#42a5f5');
 
+            let startLoopIndex = currentPlayerIndex;
             do {
                 currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
                 const p = players[currentPlayerIndex];
 
                 if (p.status === 'active' && p.hand.length > 0) {
-                    // 現在のプレイヤーをハイライト
                     p.element.style.borderColor = '#ff00ff';
                     
                     if (p.isCPU) {
-                        setTimeout(() => cpuDraw(p), 1500); // CPUは1.5秒後に交換
+                        setTimeout(() => cpuDraw(p), 1500); 
                         return;
                     } else {
-                        // プレイヤーの交換待機
-                        dom.message.textContent = `**${p.name}** は交換したいカードを選択し、「交換」または「交換なし」を押してください。`;
+                        dom.message.textContent = `**${p.name}** は交換したいカードを選択し、「交換」または「交換なし」を押してください。（最大3枚）`;
                         return;
                     }
                 }
-            } while (currentPlayerIndex !== dealerIndex);
+            } while (currentPlayerIndex !== startLoopIndex);
             
             // 全員の交換が終わった
             startPostDrawBetting();
@@ -735,18 +825,22 @@
          */
         function playerDraw() {
             const player = players[0];
-            const indicesToDraw = player.cardsToDraw.sort((a, b) => b - a); // 降順でソート
+            const indicesToDraw = player.cardsToDraw.sort((a, b) => b - a); 
             
-            // 交換
+            if (indicesToDraw.length > 3) {
+                 alert("交換できるカードは最大3枚までです。");
+                 return;
+            }
+
             indicesToDraw.forEach(index => {
-                player.hand.splice(index, 1); // 古いカードを削除
-                player.hand.push(deck.pop()); // 新しいカードを追加
+                player.hand.splice(index, 1); 
+                player.hand.push(deck.pop()); 
             });
             
             dom.message.textContent = `${player.name} は ${indicesToDraw.length} 枚のカードを交換しました。`;
-            player.cardsToDraw = []; // 選択をリセット
+            player.cardsToDraw = []; 
             
-            updateAllHandsDisplay(true);
+            updateAllHandsDisplay(false);
             dom.actionArea.style.display = 'none';
             nextDrawAction();
         }
@@ -771,35 +865,27 @@
             let indicesToDraw = [];
 
             // 非常に単純なCPU戦略: 
-            // 1. ペアがあれば、ペア以外のカードを交換
-            // 2. 強いストレート/フラッシュドローがあれば、それを維持
-            // 3. 役がなければ、すべて交換
-            
-            if (evaluation.rank === 1) { // 役なし (ハイカード)
+            if (evaluation.rank === 1) { // 役なし 
                 // 3番目、4番目、5番目に強いカードを交換（トップ2枚は保持）
                 const sortedHand = [...hand].sort((a, b) => b.value - a.value);
-                // 元の手札のインデックスを取得
                 for (let i = 2; i < 5; i++) {
                     const originalIndex = hand.findIndex(card => card.rank === sortedHand[i].rank && card.suit === sortedHand[i].suit);
-                    if (originalIndex !== -1) indicesToDraw.push(originalIndex);
+                    if (originalIndex !== -1 && !indicesToDraw.includes(originalIndex)) indicesToDraw.push(originalIndex);
                 }
             } else if (evaluation.rank === 2) { // ワンペア
                 const pairRank = evaluation.details.rank;
                 hand.forEach((card, index) => {
-                    if (card.rank !== pairRank) indicesToDraw.push(index); // ペア以外の3枚を交換
+                    if (card.rank !== pairRank) indicesToDraw.push(index); 
                 });
             } else {
-                // 2ペア以上 (3-7) は交換しない (ステイ)
-                indicesToDraw = [];
+                indicesToDraw = []; // 2ペア以上は交換しない
             }
             
-            // 交換枚数が多い場合は最大3枚までに制限（ドローポーカーの一般的なハウスルール）
             if (indicesToDraw.length > 3) {
                 indicesToDraw = indicesToDraw.slice(0, 3);
             }
 
             if (indicesToDraw.length > 0) {
-                // 交換処理
                 indicesToDraw.sort((a, b) => b - a);
                 indicesToDraw.forEach(index => {
                     hand.splice(index, 1);
@@ -812,7 +898,7 @@
                 dom.message.textContent += ` ${cpu.name} はステイしました。`;
             }
             
-            updateAllHandsDisplay(false); // CPUの手札は裏のまま
+            updateAllHandsDisplay(false); 
             setTimeout(nextDrawAction, 1000);
         }
 
@@ -825,15 +911,14 @@
          */
         function startPostDrawBetting() {
             gamePhase = 'postdraw_bet';
-            currentBet = 0; // ベットをリセット
+            currentBet = 0; 
             
-            // 全員の bet をリセット
             activePlayers.forEach(p => p.bet = 0); 
             
             dom.message.textContent = `**交換後のベットフェーズ** です。`;
             
-            currentPlayerIndex = (dealerIndex + 1) % players.length; // ディーラーの次のプレイヤーからアクション開始
-            nextAction(); // ベットロジックを再利用
+            currentPlayerIndex = (dealerIndex + 1) % players.length; 
+            nextAction(); 
         }
 
 
@@ -847,20 +932,17 @@
         function startShowdown() {
             gamePhase = 'showdown';
             
-            // 生き残っているプレイヤー
             const contenders = players.filter(p => p.status !== 'folded');
             
             if (contenders.length <= 1) {
-                // 誰もコールしていない、または全員フォールドの場合
                 const winner = contenders[0];
                 if (winner) {
                     dom.message.textContent = `全員フォールド。**${winner.name}** が ${pot} チップを獲得しました！`;
                     winner.chips += pot;
                 } else {
-                    dom.message.textContent = `誰も残りませんでした。ポットは持ち越し...（本来はありえない状況）`;
+                    dom.message.textContent = `ゲーム終了...`;
                 }
             } else {
-                // 2人以上のコンテンダーがいる場合、役を判定
                 contenders.forEach(p => {
                     p.evaluation = evaluateHand(p.hand);
                 });
@@ -869,7 +951,6 @@
                 contenders.sort((a, b) => compareHands(b.evaluation, a.evaluation));
                 const winner = contenders[0];
                 
-                // ポットを分配 (サイドポットは無視した簡易ロジック)
                 dom.message.textContent = `**ショーダウン！** 勝者は **${winner.name}** (${winner.evaluation.name}) です！ ${pot} チップを獲得！`;
                 winner.chips += pot;
 
@@ -877,11 +958,7 @@
                 updateAllHandsDisplay(true);
                 contenders.forEach(p => {
                     p.element.style.borderColor = (p === winner) ? '#00ff00' : '#ffeb3b';
-                    if (p.isCPU) {
-                        p.actionElement.textContent = `役: ${p.evaluation.name}`;
-                    } else {
-                        document.getElementById('player-action').textContent = `役: ${p.evaluation.name}`;
-                    }
+                    p.actionElement.textContent = `役: ${p.evaluation.name}`;
                 });
             }
 
@@ -895,90 +972,94 @@
 
 
         // =================================================================
-        // 11. 役の判定ロジック (最も複雑な部分)
+        // 11. 役の判定ロジック
         // =================================================================
 
         /**
          * ポーカーの役を判定し、評価オブジェクトを返します。
          * @param {Array<Object>} hand - カードの配列
-         * @returns {Object} 役の評価 (rank, name, kickers)
+         * @returns {Object} 役の評価 (rank, name, kickers, details)
          */
         function evaluateHand(hand) {
             const ranks = hand.map(c => c.value).sort((a, b) => a - b);
             const suits = hand.map(c => c.suit);
 
-            // ランクの出現回数をカウント
             const rankCounts = {};
             ranks.forEach(r => rankCounts[r] = (rankCounts[r] || 0) + 1);
             const uniqueRanks = Object.keys(rankCounts).map(Number).sort((a, b) => b - a);
             const countValues = Object.values(rankCounts).sort((a, b) => b - a);
 
             const isFlush = suits.every(s => s === suits[0]);
-            const isStraight = (ranks[4] - ranks[0] === 4) && (new Set(ranks).size === 5) || // 通常ストレート
-                                (ranks.includes(14) && ranks.includes(5) && ranks.includes(4) && ranks.includes(3) && ranks.includes(2)); // A-5のストレート (ホイール)
+            
+            // ストレート判定 (A-5ホイールも考慮)
+            let isStraight = (ranks[4] - ranks[0] === 4) && (new Set(ranks).size === 5);
+            let highStraightRank = ranks[4];
+
+            if (!isStraight && ranks.includes(14) && ranks.includes(5) && ranks.includes(4) && ranks.includes(3) && ranks.includes(2)) {
+                isStraight = true;
+                highStraightRank = 5; // A-5ストレートの場合の最高ランクは5と見なす
+            }
+
 
             // 役の判定 (ランクが高い順)
             
             // 1. ロイヤルストレートフラッシュ (Royal Flush) - ランク10
             if (isStraight && isFlush && ranks.includes(14) && ranks.includes(13)) {
-                return { rank: 10, name: "ロイヤルストレートフラッシュ", kickers: [14] };
+                return { rank: 10, name: "ロイヤルストレートフラッシュ", kickers: [14], details: {} };
             }
             
             // 2. ストレートフラッシュ (Straight Flush) - ランク9
             if (isStraight && isFlush) {
-                // A-5ストレートの場合は5、それ以外は最高ランク
-                const highCard = ranks.includes(14) && ranks.includes(5) ? 5 : ranks[4]; 
-                return { rank: 9, name: "ストレートフラッシュ", kickers: [highCard] };
+                return { rank: 9, name: "ストレートフラッシュ", kickers: [highStraightRank], details: {} };
             }
             
             // 3. フォーカード (Four of a Kind) - ランク8
             if (countValues[0] === 4) {
                 const quadRank = uniqueRanks.find(r => rankCounts[r] === 4);
                 const kicker = uniqueRanks.find(r => r !== quadRank);
-                return { rank: 8, name: "フォーカード", kickers: [quadRank, kicker] };
+                return { rank: 8, name: "フォーカード", kickers: [quadRank, kicker], details: {} };
             }
             
             // 4. フルハウス (Full House) - ランク7
             if (countValues[0] === 3 && countValues[1] === 2) {
                 const threeRank = uniqueRanks.find(r => rankCounts[r] === 3);
                 const pairRank = uniqueRanks.find(r => rankCounts[r] === 2);
-                return { rank: 7, name: "フルハウス", kickers: [threeRank, pairRank] };
+                return { rank: 7, name: "フルハウス", kickers: [threeRank, pairRank], details: {} };
             }
             
             // 5. フラッシュ (Flush) - ランク6
             if (isFlush) {
-                return { rank: 6, name: "フラッシュ", kickers: uniqueRanks };
+                return { rank: 6, name: "フラッシュ", kickers: uniqueRanks, details: {} };
             }
             
             // 6. ストレート (Straight) - ランク5
             if (isStraight) {
-                const highCard = ranks.includes(14) && ranks.includes(5) ? 5 : ranks[4]; 
-                return { rank: 5, name: "ストレート", kickers: [highCard] };
+                return { rank: 5, name: "ストレート", kickers: [highStraightRank], details: {} };
             }
 
             // 7. スリーカード (Three of a Kind) - ランク4
             if (countValues[0] === 3) {
                 const threeRank = uniqueRanks.find(r => rankCounts[r] === 3);
                 const kickers = uniqueRanks.filter(r => r !== threeRank);
-                return { rank: 4, name: "スリーカード", kickers: [threeRank, ...kickers] };
+                return { rank: 4, name: "スリーカード", kickers: [threeRank, ...kickers], details: {} };
             }
 
             // 8. ツーペア (Two Pair) - ランク3
             if (countValues[0] === 2 && countValues[1] === 2) {
                 const pairRanks = uniqueRanks.filter(r => rankCounts[r] === 2);
                 const kicker = uniqueRanks.find(r => rankCounts[r] === 1);
-                return { rank: 3, name: "ツーペア", kickers: [...pairRanks, kicker] };
+                return { rank: 3, name: "ツーペア", kickers: [...pairRanks, kicker], details: {} };
             }
 
             // 9. ワンペア (One Pair) - ランク2
             if (countValues[0] === 2) {
                 const pairRank = uniqueRanks.find(r => rankCounts[r] === 2);
                 const kickers = uniqueRanks.filter(r => r !== pairRank);
-                return { rank: 2, name: "ワンペア", kickers: [pairRank, ...kickers] };
+                return { rank: 2, name: "ワンペア", kickers: [pairRank, ...kickers], details: { rank: pairRank } };
             }
 
             // 10. 役なし (High Card) - ランク1
-            return { rank: 1, name: "役なし (ハイカード)", kickers: uniqueRanks };
+            return { rank: 1, name: "役なし (ハイカード)", kickers: uniqueRanks, details: {} };
         }
 
         /**
@@ -1001,10 +1082,6 @@
             
             return 0; // 完全な引き分け
         }
-
-        // ゲーム開始時に初期化
-        // startGame(1000); // プレイヤーがボタンを押すのを待つ
-        
     </script>
 </body>
 </html>
